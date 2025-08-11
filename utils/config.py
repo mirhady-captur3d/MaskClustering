@@ -2,7 +2,7 @@ import argparse
 from dataset.scannet import ScanNetDataset
 from dataset.matterport import MatterportDataset
 from dataset.scannetpp import ScanNetPPDataset
-from dataset.demo import DemoDataset
+from dataset.demo import DemoDataset, CustomDataset
 import json
 
 def update_args(args):
@@ -33,6 +33,8 @@ def get_dataset(args):
         dataset = MatterportDataset(args.seq_name)
     elif args.dataset == 'demo':
         dataset = DemoDataset(args.seq_name)
+    elif args.dataset == 'custom':
+        dataset = CustomDataset(args.seq_name)
     else:
         print(args.dataset)
         raise NotImplementedError

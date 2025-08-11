@@ -23,6 +23,8 @@ def get_seq_name_list(dataset):
         file_path = 'splits/scannetpp.txt'
     elif dataset == 'matterport3d':
         file_path = 'splits/matterport3d.txt'
+    elif dataset == 'custom':
+        file_path = 'splits/custom.txt'
     with open(file_path, 'r') as f:
         seq_name_list = f.readlines()
     seq_name_list = [seq_name.strip() for seq_name in seq_name_list]
@@ -71,6 +73,10 @@ def main(args):
         root = 'data/matterport3d/scans'
         image_path_pattern = '*/undistorted_color_images/*.jpg' # stride = 1
         gt = 'data/matterport3d/gt'
+    elif dataset == 'custom':
+        root = 'custom_data_converted'
+        image_path_pattern = 'color/*0.jpg' # stride = 10, similar to scannet
+        gt = 'custom_data_converted/gt'  # No ground truth for inference
 
     t0 = time.time()
     seq_name_list = get_seq_name_list(dataset)
@@ -83,7 +89,7 @@ def main(args):
     parallel_compute(f'python main.py --config {config} --seq_name_list %s', 'mask clustering', 'cuda', CUDA_LIST, seq_name_list)
     
     # Step 3: Evaluate the class-agnostic results.
-    os.system(f'python -m evaluation.evaluate --pred_path data/prediction/{config}_class_agnostic --gt_path {gt} --dataset {dataset} --no_class')
+    # os.system(f'python -m evaluation.evaluate --pred_path data/prediction/{config}_class_agnostic --gt_path {gt} --dataset {dataset} --no_class')
 
     # Step 4: Get the open-vocabulary semantic features for each 2D masks.
     parallel_compute(f'python -m semantics.get_open-voc_features --config {config}  --seq_name_list %s', 'get open-vocabulary semantic features using CLIP', 'cuda', CUDA_LIST, seq_name_list)
@@ -95,7 +101,7 @@ def main(args):
     parallel_compute(f'python -m semantics.open-voc_query --config {config}', 'get text labels', 'cpu', CUDA_LIST, seq_name_list)
     
     # Step 7: Evaluate the class-aware results.
-    os.system(f'python -m evaluation.evaluate --pred_path data/prediction/{config} --gt_path {gt} --dataset {dataset}')
+    # os.system(f'python -m evaluation.evaluate --pred_path data/prediction/{config} --gt_path {gt} --dataset {dataset}')
 
     print('total time', (time.time() - t0)//60, 'min')
     print('Average time', (time.time() - t0) / len(seq_name_list), 'sec')

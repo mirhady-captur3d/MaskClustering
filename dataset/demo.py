@@ -19,6 +19,25 @@ class DemoDataset:
 
         self.depth_scale = 1000.0
         self.image_size = (640, 480)
+
+
+class CustomDataset:
+    """Dataset class for custom data format (similar to ScanNet but for custom data)"""
+
+    def __init__(self, seq_name) -> None:
+        self.seq_name = seq_name
+        self.root = f'./custom_data_converted/{seq_name}'
+        self.rgb_dir = f'{self.root}/color'
+        self.depth_dir = f'{self.root}/depth'
+        self.segmentation_dir = f'{self.root}/output/mask'
+        self.object_dict_dir = f'{self.root}/output/object'
+        self.point_cloud_path = f'{self.root}/{seq_name}_vh_clean_2.ply'
+        self.mesh_path = self.point_cloud_path
+        self.extrinsics_dir = f'{self.root}/pose'
+        self.intrinsic_dir = f'{self.root}/intrinsic'
+
+        self.depth_scale = 1000.0
+        self.image_size = (960, 720)  # Based on the calibration file we saw
     
 
     def get_frame_list(self, stride):
@@ -31,11 +50,11 @@ class DemoDataset:
     
 
     def get_intrinsics(self, frame_id):
-        intrinsic_path = f'{self.root}/intrinsic_640.txt'
+        intrinsic_path = f'{self.intrinsic_dir}/intrinsic_depth.txt'
         intrinsics = np.loadtxt(intrinsic_path)
 
         intrinisc_cam_parameters = o3d.camera.PinholeCameraIntrinsic()
-        intrinisc_cam_parameters.set_intrinsics(640, 480, intrinsics[0, 0], intrinsics[1, 1], intrinsics[0, 2], intrinsics[1, 2])
+        intrinisc_cam_parameters.set_intrinsics(self.image_size[0], self.image_size[1], intrinsics[0, 0], intrinsics[1, 1], intrinsics[0, 2], intrinsics[1, 2])
         return intrinisc_cam_parameters
     
 
@@ -77,24 +96,23 @@ class DemoDataset:
     
 
     def get_label_features(self):
+        # Use ScanNet labels for custom data (you can modify this if needed)
         label_features_dict = np.load(f'data/text_features/scannet.npy', allow_pickle=True).item()
         return label_features_dict
 
 
     def get_scene_points(self):
-        mesh = o3d.io.read_point_cloud(self.point_cloud_path)
-        vertices = np.asarray(mesh.points)
-        return vertices
-    
-    
+        pcd = o3d.io.read_point_cloud(self.point_cloud_path)
+        return np.asarray(pcd.points)
+
+
     def get_label_id(self):
+        # Use ScanNet labels for custom data (you can modify this if needed)
         self.class_id = SCANNET_IDS
         self.class_label = SCANNET_LABELS
-
+        
         self.label2id = {}
         self.id2label = {}
         for label, id in zip(self.class_label, self.class_id):
             self.label2id[label] = id
             self.id2label[id] = label
-
-        return self.label2id, self.id2label
